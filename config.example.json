@@ -1,0 +1,5 @@
+{
+  "api_token": "your-cloudflare-api-token",
+  "domain": "home.example.com",
+  "interval": "5m"
+}
