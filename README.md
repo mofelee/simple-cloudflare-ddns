@@ -137,4 +137,4 @@ git tag v1.0.0
 git push origin v1.0.0
 ```
 
-程序收到 `SIGINT` 或 `SIGTERM` 时会正常退出。单次查询或 Cloudflare API 调用失败不会结束常驻进程，下一周期会自动重试。
+程序收到 `SIGINT` 或 `SIGTERM` 时会正常退出。同步失败后会从约 10 秒开始指数退避重试，并加入少量随机抖动；重试等待时间不会超过正常的 `interval`。同步成功后会恢复正常查询间隔。

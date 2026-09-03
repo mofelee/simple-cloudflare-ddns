@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"math/rand"
 	"net/http"
 	"os"
 	"os/signal"
@@ -58,21 +59,66 @@ func run(configPath string, once bool) error {
 		return syncOnce()
 	}
 
-	if err := syncOnce(); err != nil {
-		log.Printf("update failed: %v", err)
-	}
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
+	runContinuously(ctx, interval, syncOnce)
+	log.Print("stopped")
+	return nil
+}
+
+const initialRetryDelay = 10 * time.Second
+
+func runContinuously(ctx context.Context, interval time.Duration, syncOnce func() error) {
+	consecutiveFailures := 0
+	timer := time.NewTimer(0)
+	defer timer.Stop()
 
 	for {
 		select {
 		case <-ctx.Done():
-			log.Print("stopped")
-			return nil
-		case <-ticker.C:
-			if err := syncOnce(); err != nil {
-				log.Printf("update failed: %v", err)
+			return
+		case <-timer.C:
+			err := syncOnce()
+			if ctx.Err() != nil {
+				return
 			}
+
+			nextDelay := interval
+			if err != nil {
+				consecutiveFailures++
+				nextDelay = retryDelay(interval, consecutiveFailures, rand.Float64())
+				log.Printf("update failed: %v; retrying in %s", err, nextDelay.Round(time.Second))
+			} else {
+				consecutiveFailures = 0
+			}
+			timer.Reset(nextDelay)
 		}
 	}
+}
+
+func retryDelay(interval time.Duration, consecutiveFailures int, randomValue float64) time.Duration {
+	if interval <= initialRetryDelay {
+		return interval
+	}
+
+	delay := initialRetryDelay
+	for failure := 1; failure < consecutiveFailures; failure++ {
+		if delay >= interval/2 {
+			delay = interval
+			break
+		}
+		delay *= 2
+	}
+	if delay >= interval {
+		return interval
+	}
+
+	if randomValue < 0 {
+		randomValue = 0
+	} else if randomValue > 1 {
+		randomValue = 1
+	}
+	jittered := time.Duration(float64(delay) * (0.8 + 0.4*randomValue))
+	if jittered > interval {
+		return interval
+	}
+	return jittered
 }
