@@ -2,14 +2,16 @@
 
 一个零第三方依赖的极简 Cloudflare IPv4 DDNS。程序按固定间隔查询公网 IPv4，仅在地址变化时更新 Cloudflare A 记录；记录不存在时会自动创建。
 
-## Cloudflare 权限
+## Cloudflare API Token
 
-推荐创建 API Token，并授予目标 Zone 以下权限：
+创建步骤参考 [Cloudflare 官方教程：创建 API Token](https://developers.cloudflare.com/fundamentals/api/get-started/create-token/)。
 
-- `Zone / Zone / Read`
-- `Zone / DNS / Edit`
+关键点：
 
-资源范围只选择需要更新的 Zone。
+- 使用 API Token，不要使用 Global API Key。
+- 为目标 Zone 授予 `Zone / Zone / Read` 和 `Zone / DNS / Edit` 权限。
+- Zone Resources 只选择需要更新 DNS 的 Zone，避免授予所有域名权限。
+- Token 生成后只会完整显示一次，请立即复制并妥善保存。
 
 ## JSON 配置
 
