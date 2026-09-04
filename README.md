@@ -92,6 +92,53 @@ go build -o simple-cloudflare-ddns .
 ./simple-cloudflare-ddns -config config.json
 ```
 
+## systemd
+
+下载并安装二进制，然后写入配置文件。以下以 Linux `amd64` 为例，其他架构可将文件名中的 `amd64` 替换为 `arm64` 或 `arm-v7`：
+
+```bash
+curl -fLO https://github.com/mofelee/simple-cloudflare-ddns/releases/latest/download/simple-cloudflare-ddns-linux-amd64.tar.gz
+tar -xzf simple-cloudflare-ddns-linux-amd64.tar.gz
+sudo install -m 0755 simple-cloudflare-ddns /usr/local/bin/simple-cloudflare-ddns
+sudo install -d -m 0700 /etc/simple-cloudflare-ddns
+sudo tee /etc/simple-cloudflare-ddns/config.json >/dev/null <<'EOF'
+{
+  "api_token": "your-cloudflare-api-token",
+  "domain": "home.example.com",
+  "interval": "5m"
+}
+EOF
+sudo chmod 0600 /etc/simple-cloudflare-ddns/config.json
+```
+
+写入 systemd service：
+
+```bash
+sudo tee /etc/systemd/system/simple-cloudflare-ddns.service >/dev/null <<'EOF'
+[Unit]
+Description=Simple Cloudflare DDNS
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bin/simple-cloudflare-ddns -config /etc/simple-cloudflare-ddns/config.json
+Restart=on-failure
+RestartSec=10s
+
+[Install]
+WantedBy=multi-user.target
+EOF
+```
+
+启用并启动服务：
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now simple-cloudflare-ddns
+sudo journalctl -u simple-cloudflare-ddns -f
+```
+
+修改配置后执行 `sudo systemctl restart simple-cloudflare-ddns`。
+
 ## Docker
 
 ### Docker Compose（推荐）
