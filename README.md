@@ -94,6 +94,25 @@ go build -o simple-cloudflare-ddns .
 
 ## Docker
 
+### Docker Compose（推荐）
+
+```yaml
+services:
+  ddns:
+    image: ghcr.io/mofelee/simple-cloudflare-ddns:latest
+    restart: unless-stopped
+    environment:
+      CLOUDFLARE_API_TOKEN: your-cloudflare-api-token
+      DDNS_DOMAIN: home.example.com
+      DDNS_INTERVAL: 60s
+```
+
+```bash
+docker compose up -d
+```
+
+### Docker CLI
+
 使用环境变量运行 GHCR 镜像：
 
 ```bash
